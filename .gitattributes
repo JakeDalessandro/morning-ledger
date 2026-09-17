@@ -1,0 +1,8 @@
+# Shell scripts must keep LF endings or they break on Linux/macOS
+# with "bad interpreter: /usr/bin/env bash^M"
+*.sh text eol=lf
+
+# Normalize everything else
+*.md text
+*.csv text
+LICENSE text
