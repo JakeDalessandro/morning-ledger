@@ -1,0 +1,23 @@
+# State logs - personal financial and academic data
+*-log.csv
+.morning-ledger-*
+
+# Published briefs
+*.html
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
