@@ -109,10 +109,27 @@ A representative entry, after grading:
 > priced, not the absolute surprise.**
 
 **On the record itself:** at the time of writing, the directional call log holds
-4 graded predictions, 1 correct. That is not a track record — it is a sample far
+6 graded predictions, 3 correct. That is not a track record — it is a sample far
 too small to distinguish skill from a coin flip, and it is published here
 unedited for exactly that reason. The point of the loop is that the misses get
 written down and diagnosed, not that the calls are good.
+
+### Two bookkeeping failures the loop caught on itself
+
+Both were found by the next day's run re-reading what the previous one wrote,
+which is the only reason they are documented rather than compounding:
+
+- **A row graded against the wrong session.** A mid-session run read the grading
+  rule as "grade the newest pending row" and scored it with the most recent close
+  it happened to be holding, rather than the close on that row's own target date.
+  The displayed record stayed correct; only the log was mislabeled.
+  **Guard:** the close written to a row must be the close *on that row's target
+  date*, and a row whose session has not finished is never graded.
+- **An after-hours quote logged as an official close.** An evening run recorded
+  701.82 where the settled daily bar said 701.78 — 4 cents, which moved the
+  portfolio total by 38 cents and would have compounded silently in a log that is
+  never re-derived. **Guard:** closes come from the daily time series, never from
+  a live quote endpoint, and each run re-checks the prior day's row against it.
 
 ---
 
@@ -128,6 +145,26 @@ and featured stock is tracked with a `last_used` date:
 | Stocks | At most 2 carried over from the prior run |
 
 The governing test: **if a section would read the same tomorrow, cut it today.**
+
+### The state files are written by a real CSV writer, not string concatenation
+
+This rule exists because the rotation log corrupted itself. Rows were being
+appended by joining fields with commas; one `notes` value contained a comma,
+nothing quoted it, and 17 rows silently split into extra fields. Worse, repeated
+appends accumulated **duplicate `(kind, item)` keys** — and since the rotation
+rule picks the eligible item with the *oldest* `last_used`, a stale duplicate
+could win while a fresher row for the same item existed, defeating the cooldown
+it was there to enforce. One ticker reappeared four times inside its own 7-day
+window before anyone noticed.
+
+The fix is boring and absolute: **read the whole file, parse it, mutate the
+parsed rows, write the whole file back.** Quote any field containing a comma,
+quote, or newline (RFC 4180). Enforce uniqueness on the natural key before
+writing — update the existing row, never append a second one. Stamp exactly one
+row per item.
+
+The general lesson: a log that is only ever appended to and never read back is a
+log nobody is validating.
 
 ---
 
@@ -160,9 +197,11 @@ The schemas are published so the design is legible without the contents.
   fallback's scheduled time can start both paths. Worst case is the fallback
   republishing over the attended brief at the same URL. Judged not worth more
   machinery for the frequency it occurs.
-- **Portfolio history is partly reconstructed.** Of the logged rows, roughly
-  two-thirds were back-filled from historical closes when logging began; only
-  the remainder were captured live. Rows carry a `source` column marking which.
+- **Portfolio history is partly reconstructed.** Of 35 rows, 20 were back-filled
+  from historical closes when logging began and 15 were captured live. Rows carry
+  a `source` column marking which, so the two are never conflated. The live share
+  grows by one per trading day and will pass the reconstructed share around the
+  end of October 2026.
 
 ---
 
