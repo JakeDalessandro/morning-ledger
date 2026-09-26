@@ -131,6 +131,14 @@ which is the only reason they are documented rather than compounding:
   never re-derived. **Guard:** closes come from the daily time series, never from
   a live quote endpoint, and each run re-checks the prior day's row against it.
 
+### Two errors that reached the page
+
+Two mistakes were not caught before publishing: a week-ahead timeline built on
+the wrong weekday (an invented market holiday, every date off by one), and a
+futures move reported hours before that market had even opened. Both are written
+up as short postmortems in [`docs/INCIDENTS.md`](docs/INCIDENTS.md): what
+happened, the root cause, why nothing caught it, and the guard added since.
+
 ---
 
 ## Anti-repetition state
@@ -173,6 +181,7 @@ log nobody is validating.
 ```
 hooks/morning-ledger-trigger.sh   The daily trigger. Idempotent, path-generic.
 docs/ARCHITECTURE.md              Execution paths, failure modes, known races.
+docs/INCIDENTS.md                 Postmortems of the two errors that shipped.
 schemas/                          Column definitions for the state logs.
 ```
 
